@@ -3,54 +3,57 @@ import styled from '@emotion/styled';
 import { useDragAndDrop } from './useDragAndDrop';
 import { CSS } from '@dnd-kit/utilities';
 import { DragMoveEvent, useDndMonitor } from '@dnd-kit/core';
+import { useQBContext } from './QueryBuilderContext';
 
 const RuleContainer = styled.div<{
   isDragging: boolean;
-  isOver: boolean;
-  isDifferentPath: boolean;
+  isOverPathSameAsHookActivePath: boolean;
+  position: 'top' | 'bottom' | null;
 }>`
+  position: relative;
   width: 100%;
   border: 1px solid blue;
   margin: 20px 0;
   cursor: ${({ isDragging }) => (isDragging ? 'grabbing' : 'grab')};
-  ${({ isOver }) => {
-    if (isOver) {
+
+  ${({ position, isOverPathSameAsHookActivePath, isDragging }) => {
+    if (!position || isDragging) {
+      return;
+    }
+    if (position === 'top' && isOverPathSameAsHookActivePath) {
       return `
-            background-color: green;
+            &:before {
+                content:'';
+                position: absolute;
+                border: 1px dashed red;
+                top: 0%;
+                left: 0%;
+                width: 100%;
+                transform: translate(0, -10px);
+            }
         `;
     }
-  }}
-  ${({ isDifferentPath }) => {
-    if (isDifferentPath) {
+    if (position === 'bottom' && isOverPathSameAsHookActivePath) {
       return `
-        border-top: 3px dashed black;
-        border-bottom: 3px dashed black;
-    `;
+            &:after {
+                content:'';
+                position: absolute;
+                border: 1px dashed red;
+                bottom: 0%;
+                left: 0%;
+                width: 100%;
+                transform: translate(0, 10px);
+            }
+        `;
     }
   }}
 `;
 
 export const Rule = ({ rule, path }) => {
-  //   useDndMonitor({
-  //     onDragMove: (event: DragMoveEvent, active) => {
-  //       console.log('in Rule = onDragMove', event);
-  //       let draggableCenterY;
-  //       if (active?.rect.current.translated) {
-  //         draggableCenterY =
-  //           active.rect.current.translated?.top +
-  //           active.rect.current.translated?.height / 2;
-  //       }
-  //       let overCenterY;
-  //       if (over) {
-  //         overCenterY = over.rect.top + over.rect.height / 2;
-  //       }
-
-  //       console.log('draggableCenterY: ', draggableCenterY);
-  //       console.log('overCenterY: ', overCenterY);
-  //     },
-  //   });
-
   const {
+    isOverPathSameAsHookActivePath,
+    isDifferentPath,
+    // position,
     active,
     setNodeRef,
     attributes,
@@ -67,30 +70,16 @@ export const Rule = ({ rule, path }) => {
     },
   });
 
+  const { position } = useQBContext();
+
   const style = {
     transform: CSS.Transform.toString(transform),
   };
 
-  const overDroppablePath = over?.data.current?.path;
-  const activeDraggablePath = active?.data.current?.path;
-
-  const isDifferentPath =
-    Boolean(over) &&
-    JSON.stringify(overDroppablePath) !== JSON.stringify(activeDraggablePath);
-  const isOverPathSameAsActivePath =
-    JSON.stringify(overDroppablePath) === JSON.stringify(path);
-  let x = false;
-  // draggable and droppable paths are different...
-  // droppable path and active hook path are same
-  if (isOver && isOverPathSameAsActivePath) {
-    // console.table({ overDroppablePath, activeDraggablePath, path, isDifferentPath })
-    x = true;
-  }
-
   return (
     <RuleContainer
-      isDifferentPath={x}
-      isOver={isOver}
+      isOverPathSameAsHookActivePath={isOverPathSameAsHookActivePath}
+      position={position}
       data-path={JSON.stringify(path)}
       isDragging={isDragging}
       ref={setNodeRef}

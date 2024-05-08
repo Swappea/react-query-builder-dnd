@@ -11,6 +11,8 @@ import {
   DragStartEvent,
 } from '@dnd-kit/core';
 import { useState } from 'react';
+import { QBContextProvider, useQBContext } from './QueryBuilderContext';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 const MainContainer = styled.div`
   width: 1000px;
@@ -34,8 +36,11 @@ const findRuleByPath = (query, path) => {
 
 const findRuleGroupByPath = (query, path) => {};
 
-const App = () => {
+const QB = () => {
   const [query, setQuery] = useState(DATA);
+
+  const { position, droppedPath } = useQBContext();
+
   const onDragStartHandler = (event: DragStartEvent) => {
     console.log('onDragStartHandler', event);
   };
@@ -56,26 +61,40 @@ const App = () => {
         ) {
           return;
         }
-        console.log('=============onDragEndHandler=============', event);
+        console.log(
+          '=============onDragEndHandler=============',
+          event,
+          position,
+          droppedPath,
+          event.over.data.current.path
+        );
         const currentPath: string[] = event.active.data.current.path;
         const targetPath: string[] = event.over.data.current.path;
-        const currentRule = findRuleByPath(query, currentPath);
-        console.log('currentRule', currentPath, currentRule);
+        // const currentRule = findRuleByPath(query, currentPath);
+        // console.log('currentRule', currentPath, currentRule);
       }
     }
 
     console.log('==========================');
   };
-
   return (
     <MainContainer>
       <DndContext
+        modifiers={[restrictToVerticalAxis]}
         onDragStart={onDragStartHandler}
         onDragOver={onDragOverHandler}
         onDragEnd={onDragEndHandler}>
         <RuleGroup isRootQuery={true} query={query} path={[]} />
       </DndContext>
     </MainContainer>
+  );
+};
+
+const App = () => {
+  return (
+    <QBContextProvider>
+      <QB />
+    </QBContextProvider>
   );
 };
 
